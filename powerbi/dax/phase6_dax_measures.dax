@@ -1,0 +1,196 @@
+/* =================================================================================
+   LIVE PRODUCTION & QUALITY MANAGEMENT SYSTEM
+   Phase 6: Power BI DAX Measures Specification
+   File: powerbi/dax/phase6_dax_measures.dax
+   Source Tables: vw_fact_production, vw_fact_quality_nc, vw_fact_rework, vw_dim_date
+   Total Measures: 15
+   ================================================================================= */
+
+// =================================================================================
+// 1. PRODUCTION MEASURES (vw_fact_production)
+// =================================================================================
+
+/// <summary>
+/// 1. Total Production Runs
+/// Counts total physical motor testing runs executed.
+/// Formula: COUNTROWS(vw_fact_production)
+/// </summary>
+Total Production Runs = 
+COUNTROWS('vw_fact_production')
+
+/// <summary>
+/// 2. Approved Production Runs
+/// Total test runs verified and approved by the shift supervisor.
+/// Formula: CALCULATE([Total Production Runs], vw_fact_production[Is_Approved] = 1)
+/// </summary>
+Approved Production Runs = 
+CALCULATE(
+    [Total Production Runs],
+    'vw_fact_production'[is_approved] = 1
+)
+
+/// <summary>
+/// 3. Pending Production Runs
+/// Total test runs awaiting supervisor review and sign-off.
+/// Formula: CALCULATE([Total Production Runs], vw_fact_production[Is_Pending] = 1)
+/// </summary>
+Pending Production Runs = 
+CALCULATE(
+    [Total Production Runs],
+    'vw_fact_production'[is_pending] = 1
+)
+
+/// <summary>
+/// 4. Rejected Production Runs
+/// Total test runs rejected during supervisory inspection requiring correction.
+/// Formula: CALCULATE([Total Production Runs], vw_fact_production[Is_Rejected] = 1)
+/// </summary>
+Rejected Production Runs = 
+CALCULATE(
+    [Total Production Runs],
+    'vw_fact_production'[is_rejected] = 1
+)
+
+/// <summary>
+/// 5. Average Cycle Time
+/// Arithmetic mean of cycle time in hours per motor test run.
+/// Formula: AVERAGE(vw_fact_production[Cycle_Time_Hours])
+/// </summary>
+Average Cycle Time = 
+AVERAGE('vw_fact_production'[cycle_time_hours])
+
+/// <summary>
+/// 6. Total Testing Hours
+/// Cumulative sum of all stage testing times converted from minutes to hours.
+/// Formula: DIVIDE(SUM(vw_fact_production[Total_Testing_Time_Minutes]), 60, BLANK())
+/// </summary>
+Total Testing Hours = 
+DIVIDE(
+    SUM('vw_fact_production'[total_testing_time_minutes]),
+    60.0,
+    BLANK()
+)
+
+/// <summary>
+/// 7. Production Pass Rate
+/// Percentage of motor test runs that achieved a 'PASS' status on first testing.
+/// Formula: DIVIDE(CALCULATE([Total Production Runs], vw_fact_production[Is_Pass] = 1), [Total Production Runs], BLANK())
+/// Format: 0.0%
+/// </summary>
+Production Pass Rate = 
+DIVIDE(
+    CALCULATE([Total Production Runs], 'vw_fact_production'[is_pass] = 1),
+    [Total Production Runs],
+    BLANK()
+)
+
+
+// =================================================================================
+// 2. QUALITY & NON-CONFORMANCE MEASURES (vw_fact_quality_nc)
+// =================================================================================
+
+/// <summary>
+/// 8. Total Non-Conformances
+/// Total count of formal NC tickets logged in the quality management system.
+/// Formula: COUNTROWS(vw_fact_quality_nc)
+/// </summary>
+Total Non-Conformances = 
+COUNTROWS('vw_fact_quality_nc')
+
+/// <summary>
+/// 9. Open NCs
+/// Count of non-conformance cases currently active (OPEN, IN_PROGRESS, or UNDER_REVIEW).
+/// Formula: CALCULATE([Total Non-Conformances], vw_fact_quality_nc[Is_Closed] = 0)
+/// </summary>
+Open NCs = 
+CALCULATE(
+    [Total Non-Conformances],
+    'vw_fact_quality_nc'[is_closed] = 0
+)
+
+/// <summary>
+/// 10. Closed NCs
+/// Count of non-conformance tickets resolved and verified closed by Quality Engineers.
+/// Formula: CALCULATE([Total Non-Conformances], vw_fact_quality_nc[Is_Closed] = 1)
+/// </summary>
+Closed NCs = 
+CALCULATE(
+    [Total Non-Conformances],
+    'vw_fact_quality_nc'[is_closed] = 1
+)
+
+/// <summary>
+/// 11. NC Rate
+/// Percentage of production runs resulting in a non-conformance ticket.
+/// Formula: DIVIDE([Total Non-Conformances], [Total Production Runs], BLANK())
+/// Format: 0.0%
+/// </summary>
+NC Rate = 
+DIVIDE(
+    [Total Non-Conformances],
+    [Total Production Runs],
+    BLANK()
+)
+
+
+// =================================================================================
+// 3. REWORK MEASURES (vw_fact_rework)
+// =================================================================================
+
+/// <summary>
+/// 12. Total Rework Minutes
+/// Cumulative repair and rectification labor minutes logged across all rework jobs.
+/// Formula: SUM(vw_fact_rework[Rework_Minutes])
+/// </summary>
+Total Rework Minutes = 
+SUM('vw_fact_rework'[rework_minutes])
+
+/// <summary>
+/// 13. Average Rework Time
+/// Average duration in minutes spent on a single rework repair task.
+/// Formula: AVERAGE(vw_fact_rework[Rework_Minutes])
+/// </summary>
+Average Rework Time = 
+AVERAGE('vw_fact_rework'[rework_minutes])
+
+
+// =================================================================================
+// 4. MACHINE PERFORMANCE & HISTORICAL TREND MEASURES
+// =================================================================================
+
+/// <summary>
+/// 14. Machine-wise Production
+/// Explicit production volume measure evaluated within machine dimension context.
+/// Formula: CALCULATE([Total Production Runs])
+/// </summary>
+Machine-wise Production = 
+CALCULATE([Total Production Runs])
+
+/// <summary>
+/// 15. Machine-wise Pass Rate
+/// Production first-pass yield evaluated dynamically per machine slicing.
+/// Formula: [Production Pass Rate]
+/// </summary>
+Machine-wise Pass Rate = 
+[Production Pass Rate]
+
+/// <summary>
+/// 16. Monthly Production Growth
+/// Month-over-Month percentage change in production testing volume.
+/// Formula: DIVIDE([Total Production Runs] - PriorMonth, PriorMonth, BLANK())
+/// Uses vw_dim_date[Full_Date] time-intelligence navigation.
+/// </summary>
+Monthly Production Growth = 
+VAR CurrentRuns = [Total Production Runs]
+VAR PriorMonthRuns = 
+    CALCULATE(
+        [Total Production Runs],
+        DATEADD('vw_dim_date'[full_date], -1, MONTH)
+    )
+RETURN
+    DIVIDE(
+        CurrentRuns - PriorMonthRuns,
+        PriorMonthRuns,
+        BLANK()
+    )
+

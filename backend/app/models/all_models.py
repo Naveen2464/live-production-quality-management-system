@@ -271,7 +271,7 @@ class AuditLog(Base):
     username = Column(String(100), nullable=False, index=True)
     role = Column(String(50), nullable=True)
     action = Column(String(50), nullable=False, index=True) # CREATE, UPDATE, DELETE, APPROVE, REJECT, CLOSE, IMPORT
-    module = Column(String(50), nullable=False, index=True) # PRODUCTION, QUALITY, NC, REWORK, USER, ADMIN
+    module = Column(String(50), nullable=False, index=True) # PRODUCTION, QUALITY, NC, REWORK, USER, ADMIN, IMPORT
     record_id = Column(String(50), nullable=True)
     
     previous_values = Column(JSON, nullable=True)
@@ -279,4 +279,41 @@ class AuditLog(Base):
     ip_address = Column(String(50), nullable=True)
     user_agent = Column(String(255), nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+# 12. IMPORT HISTORY TABLE
+class ImportHistory(Base):
+    __tablename__ = "import_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    file_name = Column(String(255), nullable=False)
+    file_type = Column(String(50), nullable=False)  # PRODUCTION, QUALITY
+    total_rows = Column(Integer, default=0, nullable=False)
+    valid_rows = Column(Integer, default=0, nullable=False)
+    rejected_rows = Column(Integer, default=0, nullable=False)
+    duplicate_rows = Column(Integer, default=0, nullable=False)
+    status = Column(String(50), default="COMPLETED", nullable=False) # VALIDATED, COMPLETED, FAILED
+    imported_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    imported_by_username = Column(String(100), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    errors = relationship("ImportError", back_populates="import_batch", cascade="all, delete-orphan")
+    imported_by = relationship("User")
+
+
+# 13. IMPORT ERRORS TABLE
+class ImportError(Base):
+    __tablename__ = "import_errors"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    import_history_id = Column(Integer, ForeignKey("import_history.id"), nullable=False, index=True)
+    row_number = Column(Integer, nullable=False)
+    raw_data = Column(JSON, nullable=True)
+    error_type = Column(String(100), nullable=False) # VALIDATION_ERROR, DUPLICATE, MISSING_RELATION, FORMAT_ERROR
+    error_message = Column(Text, nullable=False)
+    field_name = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    import_batch = relationship("ImportHistory", back_populates="errors")
+
 

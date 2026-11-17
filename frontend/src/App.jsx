@@ -4,8 +4,10 @@ import ProductionEntryForm from './components/ProductionEntryForm';
 import ProductionTable from './components/ProductionTable';
 import NCManagementView from './components/NCManagementView';
 import QualityDefectForm from './components/QualityDefectForm';
+import ExcelMigrationView from './components/ExcelMigrationView';
+import DashboardHub from './components/dashboard/DashboardHub';
 import { getMasterDropdowns } from './services/api';
-import { PlusCircle, ListFilter, AlertOctagon, ShieldAlert, Database } from 'lucide-react';
+import { PlusCircle, ListFilter, AlertOctagon, ShieldAlert, FileSpreadsheet, BarChart3, Database } from 'lucide-react';
 import './App.css';
 
 export default function App() {
@@ -108,6 +110,12 @@ export default function App() {
         {/* Navigation Tabs */}
         <div className="tab-navigation">
           <button 
+            className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <BarChart3 size={16} /> Real-Time Analytics Dashboards
+          </button>
+          <button 
             className={`tab-btn ${activeTab === 'nc' ? 'active' : ''}`}
             onClick={() => setActiveTab('nc')}
           >
@@ -131,6 +139,12 @@ export default function App() {
           >
             <ListFilter size={16} /> Production Records & Approvals
           </button>
+          <button 
+            className={`tab-btn ${activeTab === 'migration' ? 'active' : ''}`}
+            onClick={() => setActiveTab('migration')}
+          >
+            <FileSpreadsheet size={16} /> Excel Data Migration
+          </button>
         </div>
 
         {/* Content Body */}
@@ -150,6 +164,13 @@ export default function App() {
           </div>
         ) : (
           <div className="tab-content">
+            {activeTab === 'dashboard' && (
+              <DashboardHub
+                dropdowns={dropdowns}
+                refreshTrigger={refreshTrigger}
+              />
+            )}
+
             {activeTab === 'nc' && (
               <NCManagementView
                 dropdowns={dropdowns}
@@ -182,6 +203,13 @@ export default function App() {
                 refreshTrigger={refreshTrigger}
                 currentRole={currentRole}
                 currentSupervisorId={2}
+              />
+            )}
+
+            {activeTab === 'migration' && (
+              <ExcelMigrationView
+                currentRole={currentRole}
+                currentUserId={currentUserId}
               />
             )}
           </div>

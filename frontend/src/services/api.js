@@ -218,3 +218,123 @@ export async function updateReworkStatus(reworkId, status, verifiedById = null, 
   }
   return res.json();
 }
+
+// -------------------------------------------------------------
+// EXCEL DATA MIGRATION APIS
+// -------------------------------------------------------------
+export async function validateExcelUpload(file, fileType = 'PRODUCTION') {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('file_type', fileType);
+
+  const res = await fetch(`${API_BASE}/import/upload`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to upload and validate Excel file');
+  }
+  return res.json();
+}
+
+export async function confirmImport(batchId, userId = 1, username = 'admin', role = 'Administrator') {
+  const res = await fetch(`${API_BASE}/import/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      batch_id: batchId,
+      user_id: userId,
+      username: username,
+      role: role
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to confirm data import');
+  }
+  return res.json();
+}
+
+export async function getImportHistory() {
+  const res = await fetch(`${API_BASE}/import/history`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to fetch import history');
+  }
+  return res.json();
+}
+
+export async function getImportErrors(historyId) {
+  const res = await fetch(`${API_BASE}/import/${historyId}/errors`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch errors for batch #${historyId}`);
+  }
+  return res.json();
+}
+
+export function getImportErrorsDownloadUrl(historyId) {
+  return `${API_BASE}/import/${historyId}/errors/download`;
+}
+
+export function getProductionExportUrl() {
+  return `${API_BASE}/export/production`;
+}
+
+export function getQualityExportUrl() {
+  return `${API_BASE}/export/quality`;
+}
+
+// -------------------------------------------------------------
+// OPERATIONAL DASHBOARDS & ANALYTICS (RECHARTS)
+// -------------------------------------------------------------
+export async function getDashboardSummary() {
+  const res = await fetch(`${API_BASE}/dashboard/summary`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to fetch executive dashboard summary');
+  }
+  return res.json();
+}
+
+export async function getProductionAnalytics(params = {}) {
+  const query = new URLSearchParams();
+  Object.keys(params).forEach(k => {
+    if (params[k] !== undefined && params[k] !== null && params[k] !== '') {
+      query.append(k, params[k]);
+    }
+  });
+  const res = await fetch(`${API_BASE}/dashboard/production?${query.toString()}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to fetch production analytics');
+  }
+  return res.json();
+}
+
+export async function getQualityAnalytics(params = {}) {
+  const query = new URLSearchParams();
+  Object.keys(params).forEach(k => {
+    if (params[k] !== undefined && params[k] !== null && params[k] !== '') {
+      query.append(k, params[k]);
+    }
+  });
+  const res = await fetch(`${API_BASE}/dashboard/quality?${query.toString()}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to fetch quality analytics');
+  }
+  return res.json();
+}
+
+export async function getMachinePerformanceAnalytics() {
+  const res = await fetch(`${API_BASE}/dashboard/machines`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to fetch machine performance analytics');
+  }
+  return res.json();
+}
+
+
